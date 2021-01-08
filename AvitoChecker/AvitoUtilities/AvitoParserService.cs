@@ -3,7 +3,6 @@ using HtmlAgilityPack.CssSelectors.NetCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
@@ -18,23 +17,8 @@ namespace AvitoChecker
         public AvitoParserService(HttpClient client)
         {
             _client = client;
-            _client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36");
-            _client.DefaultRequestHeaders.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
-            _client.DefaultRequestHeaders.Add("accept-encoding", "gzip, deflate, br");
-            _client.DefaultRequestHeaders.Add("accept-language", "en-US,en;q=0.9");
-
-            var proxy = new WebProxy
-            {
-                Address = new Uri("http://localhost:8888"),
-                BypassProxyOnLocal = false,
-            };
-
-            // Now create a client handler which uses that proxy
-            var httpClientHandler = new HttpClientHandler
-            {
-                Proxy = proxy,
-            };
-            _client = new(httpClientHandler, true);
+            _client.DefaultRequestHeaders.Add("accept", "text/html");
+            _client.DefaultRequestHeaders.Add("accept-encoding", "utf-8");
 
             avitoUrlTemplate = "https://www.avito.ru/rossiya/telefony?cd=2&pmax={0}&pmin={1}&q={2}&s=104&user={3}";
 
