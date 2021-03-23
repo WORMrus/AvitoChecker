@@ -76,7 +76,7 @@ namespace AvitoChecker
 
         protected string GetTitleFromNode(HtmlNode node)
         {
-            var singleNode = QueryNodeAndEnsureSingleResult(node, "span[class^='title-root']");
+            var singleNode = QueryNodeAndEnsureSingleResult(node, "[class^='title-root']");
             return singleNode.InnerText;
         }
 
@@ -102,7 +102,7 @@ namespace AvitoChecker
         protected HtmlNode QueryNodeAndEnsureSingleResult(HtmlNode node, string query)
         {
             var foundNodes = node.QuerySelectorAll(query);
-            return foundNodes.Count != 1 ? throw new Exception($"More than one node matched the selector. The count is {foundNodes.Count}") : foundNodes[0];
+            return foundNodes.Count != 1 ? throw new Exception($"Not exactly one node matched the selector. The count is {foundNodes.Count}") : foundNodes[0];
         }
     }
 }
