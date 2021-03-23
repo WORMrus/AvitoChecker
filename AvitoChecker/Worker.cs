@@ -1,3 +1,4 @@
+using AvitoChecker.DataStorage;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -10,11 +11,13 @@ namespace AvitoChecker
     {
         private readonly ILogger<Worker> _logger;
         private readonly AvitoParserService _avito;
+        private readonly IDataStorage _storage;
 
-        public Worker(ILogger<Worker> logger, AvitoParserService avito)
+        public Worker(ILogger<Worker> logger, AvitoParserService avito, IDataStorage storage)
         {
             _logger = logger;
             _avito = avito;
+            _storage = storage;
 
         }
 
@@ -29,8 +32,8 @@ namespace AvitoChecker
                 {
                     _logger.LogInformation($"{item.Name}, {item.Price}, {item.Published}");
                 }
-
-                await Task.Delay(10000);
+                _storage.StoreListings((listings));
+                await Task.Delay(10000, stoppingToken);
             }
         }
     }

@@ -1,3 +1,4 @@
+using AvitoChecker.DataStorage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -18,6 +19,7 @@ namespace AvitoChecker
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>()
+                            .AddSingleton<IDataStorage, JSONFileStorage>((x) => { return new JSONFileStorage("./storage.txt"); })
                             .AddHttpClient<AvitoParserService>()
                             .ConfigurePrimaryHttpMessageHandler(() =>
                             {
@@ -28,8 +30,8 @@ namespace AvitoChecker
                                 };
                                 return new HttpClientHandler()
                                 {
-                                    Proxy = proxy,
-                                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                                    //Proxy = proxy,
+                                    //ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                                 };
                             });
                 });
