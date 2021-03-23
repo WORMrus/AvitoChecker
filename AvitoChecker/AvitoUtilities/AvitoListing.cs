@@ -28,7 +28,7 @@ namespace AvitoChecker
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Name, Price, ID, Published);
+            return HashCode.Combine(Name, Price, ID);
         }
     }
 

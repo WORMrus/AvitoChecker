@@ -7,5 +7,6 @@
         void StoreListings(AvitoListing[] listings);
         void StoreListing(AvitoListing listing);
         bool RemoveListingByID(string id);
+        AvitoListing[] FindDifferences(AvitoListing[] listing);
     }
 }

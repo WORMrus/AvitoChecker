@@ -65,6 +65,11 @@ namespace AvitoChecker.DataStorage
             overrideFile(Listings);
         }
 
+        public AvitoListing[] FindDifferences(AvitoListing[] listing)
+        {
+            return listing.ToArray().Except(Listings).ToArray(); //kinda ugly but I duno
+        }
+
         public bool RemoveListingByID(string id)
         {
             int removed = Listings.RemoveAll(x => x.ID == id);
@@ -97,6 +102,7 @@ namespace AvitoChecker.DataStorage
                 WriteIndented = true
             })); //don't care if we return before this finishes
         }
+
 
         ~JSONFileStorage()
         {

@@ -2,6 +2,7 @@ using AvitoChecker.DataStorage;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,8 +28,13 @@ namespace AvitoChecker
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 AvitoListing[] listings = await _avito.GetAvitoPhoneListings("pixel 5", 48000, 54000, AvitoListingType.Private);
-                _logger.LogInformation($"Found {listings.Length} listings:\r\n");
-                foreach (var item in listings)
+
+                var newListings = _storage.FindDifferences(listings);
+
+                var rand = new Random();
+
+                _logger.LogInformation($"Found {newListings.Length} new listing(s){(newListings.Any() ? Environment.NewLine : "") }");
+                foreach (var item in newListings)
                 {
                     _logger.LogInformation($"{item.Name}, {item.Price}, {item.Published}");
                 }
