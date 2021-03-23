@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Unicode;
 
 namespace AvitoChecker.DataStorage
 {
     class JSONFileStorage : IDataStorage
     {
 
-        private StreamWriter Writer;
-        FileStream Fs;
+        private StreamWriter _writer;
+        private FileStream _fs;
 
         private List<AvitoListing> _listings;
         private List<AvitoListing> Listings
@@ -18,8 +20,8 @@ namespace AvitoChecker.DataStorage
             get => _listings;
             set
             {
+                overrideFileIfNeeded(value);
                 _listings = value;
-                Writer.WriteAsync(JsonSerializer.Serialize(value));
             }
         }
 
@@ -30,12 +32,12 @@ namespace AvitoChecker.DataStorage
             StorageFileLocation = pathToStorage;
             string jsonString;
 
-            Fs = new FileStream(StorageFileLocation, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-            Writer = new(Fs);
-            using (StreamReader reader = new(Fs))
-            {
-                jsonString = reader.ReadToEnd();
-            }
+            _fs = new FileStream(StorageFileLocation, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+            _writer = new(_fs);
+            _writer.AutoFlush = true;
+
+            StreamReader reader = new(_fs);
+            jsonString = reader.ReadToEnd();
 
             jsonString = string.IsNullOrEmpty(jsonString) ? "[]" : jsonString;
             Listings = JsonSerializer.Deserialize<List<AvitoListing>>(jsonString);
@@ -59,7 +61,8 @@ namespace AvitoChecker.DataStorage
 
         public void StoreListing(AvitoListing listing)
         {
-            Listings.Append(listing);
+            Listings.Add(listing);
+            overrideFile(Listings);
         }
 
         public bool RemoveListingByID(string id)
@@ -76,10 +79,29 @@ namespace AvitoChecker.DataStorage
             }
         }
 
+        private void overrideFileIfNeeded(List<AvitoListing> listings)
+        {
+            if (Listings == null || Enumerable.SequenceEqual(Listings, listings))
+            {
+                return;
+            }
+            overrideFile(listings);
+        }
+
+        private void overrideFile(List<AvitoListing> listings)
+        {
+            _writer.BaseStream.SetLength(0);//effectively overrides the file
+            _writer.WriteAsync(JsonSerializer.Serialize(listings, new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Cyrillic),
+                WriteIndented = true
+            })); //don't care if we return before this finishes
+        }
+
         ~JSONFileStorage()
         {
-            Writer.Dispose();
-            Fs.Dispose();
+            _fs.Dispose();
+            _writer.Dispose();
         }
     }
 }
