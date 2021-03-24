@@ -29,7 +29,7 @@ namespace AvitoChecker
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                AvitoListing[] listings = await _avito.GetAvitoPhoneListings("pixel 5", 48000, 54000, AvitoListingType.Private);
+                AvitoListing[] listings = await _avito.GetAvitoListings("pixel 5", 48000, 54000, AvitoListingType.Private);
 
                 var newListings = _storage.FindDifferences(listings);
 
@@ -37,10 +37,8 @@ namespace AvitoChecker
                 foreach (var item in newListings)
                 {
                     _logger.LogInformation($"{item.Name}, {item.Price}, {item.Published}");
-
+                    _notificationSender.SendNotification(item);
                 }
-
-                _notificationSender.SendNotification(listings[0]);
 
                 _storage.StoreListings((listings));
                 await Task.Delay(10000, stoppingToken);

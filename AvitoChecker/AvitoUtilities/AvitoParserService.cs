@@ -12,7 +12,9 @@ namespace AvitoChecker
     public class AvitoParserService
     {
         protected readonly HttpClient _client;
-        protected readonly string avitoUrlTemplate;
+        protected readonly string _avitoUrlTemplate;
+        protected static readonly string _avitoBaseUrl = "https://www.avito.ru/";
+
 
         public AvitoParserService(HttpClient client)
         {
@@ -20,17 +22,16 @@ namespace AvitoChecker
             _client.DefaultRequestHeaders.Add("accept", "text/html");
             _client.DefaultRequestHeaders.Add("accept-encoding", "utf-8");
 
-            avitoUrlTemplate = "https://www.avito.ru/rossiya/telefony?cd=2&pmax={0}&pmin={1}&q={2}&s=104&user={3}";
-
+            _avitoUrlTemplate = _avitoBaseUrl + "/rossiya/telefony?cd=2&pmax={0}&pmin={1}&q={2}&s=104&user={3}";
         }
 
-        public async Task<AvitoListing[]> GetAvitoPhoneListings(string searchQuery, int priceFrom, int priceTo, AvitoListingType type)
+        public async Task<AvitoListing[]> GetAvitoListings(string searchQuery, int priceFrom, int priceTo, AvitoListingType type)
         {
             string formattedQuery = HttpUtility.UrlEncode(searchQuery);
             HttpResponseMessage resp;
             try
             {
-                resp = await _client.GetAsync(string.Format(avitoUrlTemplate, priceTo, priceFrom, formattedQuery, (int)type));
+                resp = await _client.GetAsync(string.Format(_avitoUrlTemplate, priceTo, priceFrom, formattedQuery, (int)type));
             }
             catch (Exception)
             {
@@ -69,7 +70,8 @@ namespace AvitoChecker
                 Name = GetTitleFromNode(node),
                 ID = node.Attributes.AttributesWithName("data-item-id").First().Value,
                 Price = int.Parse(GetPriceFromNode(node)),
-                Published = GetPublishedStringFromNode(node)
+                Published = GetPublishedStringFromNode(node),
+                Link = _avitoBaseUrl + GetLinkFromNode(node)
             };
         }
 
@@ -77,6 +79,12 @@ namespace AvitoChecker
         {
             var singleNode = QueryNodeAndEnsureSingleResult(node, "[class^='title-root']");
             return singleNode.InnerText;
+        }
+
+        protected static string GetLinkFromNode(HtmlNode node)
+        {
+            var singleNode = QueryNodeAndEnsureSingleResult(node, "a[data-marker='item-title']");
+            return singleNode.GetAttributeValue("href", "");
         }
 
         protected static string GetPriceFromNode(HtmlNode node)
