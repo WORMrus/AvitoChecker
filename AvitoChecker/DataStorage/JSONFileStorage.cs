@@ -8,7 +8,7 @@ using System.Text.Unicode;
 
 namespace AvitoChecker.DataStorage
 {
-    class JSONFileStorage : IDataStorage
+    class JSONFileStorage : IDataStorage, IDisposable
     {
 
         private readonly StreamWriter _writer;
@@ -100,6 +100,10 @@ namespace AvitoChecker.DataStorage
             })); //don't care if we return before this finishes
         }
 
+        public void Dispose()
+        {
+            ((IDisposable)_writer).Dispose();
+        }
 
         ~JSONFileStorage()
         {

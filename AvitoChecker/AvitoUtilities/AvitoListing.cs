@@ -8,6 +8,7 @@ namespace AvitoChecker
         public int Price { get; init; }
         public string ID { get; init; }
         public string Published { get; init; }
+        public string Link { get; set; }
 
         public override bool Equals(Object obj)
         {

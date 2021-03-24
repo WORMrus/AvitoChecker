@@ -1,4 +1,5 @@
 using AvitoChecker.DataStorage;
+using AvitoChecker.Notifications;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,13 +14,14 @@ namespace AvitoChecker
         private readonly ILogger<Worker> _logger;
         private readonly AvitoParserService _avito;
         private readonly IDataStorage _storage;
+        private readonly INotificationSender _notificationSender;
 
-        public Worker(ILogger<Worker> logger, AvitoParserService avito, IDataStorage storage)
+        public Worker(ILogger<Worker> logger, AvitoParserService avito, IDataStorage storage, INotificationSender notificationSender)
         {
             _logger = logger;
             _avito = avito;
             _storage = storage;
-
+            _notificationSender = notificationSender;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -35,7 +37,11 @@ namespace AvitoChecker
                 foreach (var item in newListings)
                 {
                     _logger.LogInformation($"{item.Name}, {item.Price}, {item.Published}");
+
                 }
+
+                _notificationSender.SendNotification(listings[0]);
+
                 _storage.StoreListings((listings));
                 await Task.Delay(10000, stoppingToken);
             }
