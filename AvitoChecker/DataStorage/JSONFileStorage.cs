@@ -11,8 +11,8 @@ namespace AvitoChecker.DataStorage
     class JSONFileStorage : IDataStorage
     {
 
-        private StreamWriter _writer;
-        private FileStream _fs;
+        private readonly StreamWriter _writer;
+        private readonly FileStream _fs;
 
         private List<AvitoListing> _listings;
         private List<AvitoListing> Listings
@@ -20,7 +20,7 @@ namespace AvitoChecker.DataStorage
             get => _listings;
             set
             {
-                overrideFileIfNeeded(value);
+                OverrideFileIfNeeded(value);
                 _listings = value;
             }
         }
@@ -62,7 +62,7 @@ namespace AvitoChecker.DataStorage
         public void StoreListing(AvitoListing listing)
         {
             Listings.Add(listing);
-            overrideFile(Listings);
+            OverrideFile(Listings);
         }
 
         public AvitoListing[] FindDifferences(AvitoListing[] listing)
@@ -73,27 +73,24 @@ namespace AvitoChecker.DataStorage
         public bool RemoveListingByID(string id)
         {
             int removed = Listings.RemoveAll(x => x.ID == id);
-            switch (removed)
+            return removed switch
             {
-                case 1:
-                    return true;
-                case 0:
-                    return false;
-                default:
-                    throw new Exception($"More than one listing with ID {id} exist ({removed})");
-            }
+                1 => true,
+                0 => false,
+                _ => throw new Exception($"More than one listing with ID {id} exist ({removed})"),
+            };
         }
 
-        private void overrideFileIfNeeded(List<AvitoListing> listings)
+        private void OverrideFileIfNeeded(List<AvitoListing> listings)
         {
             if (Listings == null || Enumerable.SequenceEqual(Listings, listings))
             {
                 return;
             }
-            overrideFile(listings);
+            OverrideFile(listings);
         }
 
-        private void overrideFile(List<AvitoListing> listings)
+        private void OverrideFile(List<AvitoListing> listings)
         {
             _writer.BaseStream.SetLength(0);//effectively overrides the file
             _writer.WriteAsync(JsonSerializer.Serialize(listings, new JsonSerializerOptions

@@ -27,14 +27,13 @@ namespace AvitoChecker
         public async Task<AvitoListing[]> GetAvitoPhoneListings(string searchQuery, int priceFrom, int priceTo, AvitoListingType type)
         {
             string formattedQuery = HttpUtility.UrlEncode(searchQuery);
-            HttpResponseMessage resp = null;
+            HttpResponseMessage resp;
             try
             {
                 resp = await _client.GetAsync(string.Format(avitoUrlTemplate, priceTo, priceFrom, formattedQuery, (int)type));
             }
-            catch (Exception e)
+            catch (Exception)
             {
-
                 throw;
             }
 
@@ -53,17 +52,17 @@ namespace AvitoChecker
             return HtmlNodesToListings(itemListings);
         }
 
-        protected AvitoListing[] HtmlNodesToListings(IList<HtmlNode> nodes)
+        protected static AvitoListing[] HtmlNodesToListings(IList<HtmlNode> nodes)
         {
             AvitoListing[] listings = new AvitoListing[nodes.Count];
             for (int i = 0; i < listings.Length; i++)
             {
-                listings[i] = htmlNodeToListing(nodes[i]);
+                listings[i] = HtmlNodeToListing(nodes[i]);
             }
             return listings;
         }
 
-        protected AvitoListing htmlNodeToListing(HtmlNode node)
+        protected static AvitoListing HtmlNodeToListing(HtmlNode node)
         {
             return new AvitoListing()
             {
@@ -74,19 +73,19 @@ namespace AvitoChecker
             };
         }
 
-        protected string GetTitleFromNode(HtmlNode node)
+        protected static string GetTitleFromNode(HtmlNode node)
         {
             var singleNode = QueryNodeAndEnsureSingleResult(node, "[class^='title-root']");
             return singleNode.InnerText;
         }
 
-        protected string GetPriceFromNode(HtmlNode node)
+        protected static string GetPriceFromNode(HtmlNode node)
         {
             var singleNode = QueryNodeAndEnsureSingleResult(node, "meta[itemprop='price']");
             return singleNode.Attributes.AttributesWithName("content").First().Value;
         }
 
-        protected string GetPublishedStringFromNode(HtmlNode node)
+        protected static string GetPublishedStringFromNode(HtmlNode node)
         {
             //Some listings do not have a date. E.g. shop-related ones
             try
@@ -99,7 +98,7 @@ namespace AvitoChecker
             }
         }
 
-        protected HtmlNode QueryNodeAndEnsureSingleResult(HtmlNode node, string query)
+        protected static HtmlNode QueryNodeAndEnsureSingleResult(HtmlNode node, string query)
         {
             var foundNodes = node.QuerySelectorAll(query);
             return foundNodes.Count != 1 ? throw new Exception($"Not exactly one node matched the selector. The count is {foundNodes.Count}") : foundNodes[0];

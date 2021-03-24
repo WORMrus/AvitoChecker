@@ -31,8 +31,6 @@ namespace AvitoChecker
 
                 var newListings = _storage.FindDifferences(listings);
 
-                var rand = new Random();
-
                 _logger.LogInformation($"Found {newListings.Length} new listing(s){(newListings.Any() ? Environment.NewLine : "") }");
                 foreach (var item in newListings)
                 {
