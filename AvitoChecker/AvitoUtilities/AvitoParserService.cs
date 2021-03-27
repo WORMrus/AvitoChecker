@@ -13,7 +13,7 @@ namespace AvitoChecker
     {
         protected readonly HttpClient _client;
         protected readonly string _avitoUrlTemplate;
-        protected static readonly string _avitoBaseUrl = "https://www.avito.ru/";
+        protected static readonly string _avitoBaseUrl = "https://www.avito.ru";
 
 
         public AvitoParserService(HttpClient client)

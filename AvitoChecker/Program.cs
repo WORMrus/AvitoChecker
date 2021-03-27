@@ -1,3 +1,4 @@
+using AvitoChecker.Configuration;
 using AvitoChecker.DataStorage;
 using AvitoChecker.Notifications;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,9 +18,10 @@ namespace AvitoChecker
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureServices((hostContext, services) =>
+            .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>()
+                            .Configure<ListingQueryOptions>(hostContext.Configuration.GetSection(nameof(ListingQueryOptions)))
                             .AddSingleton<IDataStorage, JSONFileStorage>((x) => { return new JSONFileStorage("./storage.txt"); })
                             .AddSingleton<INotificationSender, WindowsNotificationSender>((x) => { return new WindowsNotificationSender(); })
                             .AddHttpClient<AvitoParserService>()
