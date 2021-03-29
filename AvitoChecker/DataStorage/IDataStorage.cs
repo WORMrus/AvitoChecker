@@ -1,12 +1,14 @@
-﻿namespace AvitoChecker.DataStorage
+﻿using AvitoChecker.ListingUtilities;
+
+namespace AvitoChecker.DataStorage
 {
     public interface IDataStorage
     {
-        AvitoListing[] GetListings();
-        AvitoListing GetListingByID(string id);
-        void StoreListings(AvitoListing[] listings);
-        void StoreListing(AvitoListing listing);
+        Listing[] GetListings();
+        Listing GetListingByID(string id);
+        void StoreListings(Listing[] listings);
+        void StoreListing(Listing listing);
         bool RemoveListingByID(string id);
-        AvitoListing[] FindDifferences(AvitoListing[] listing);
+        Listing[] FindDifferences(Listing[] listing);
     }
 }

@@ -1,9 +1,8 @@
-using AvitoChecker.Configuration;
 using AvitoChecker.DataStorage;
+using AvitoChecker.ListingUtilities;
 using AvitoChecker.Notifications;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
 using System.Threading;
@@ -17,15 +16,13 @@ namespace AvitoChecker
         private readonly AvitoParserService _avito;
         private readonly IDataStorage _storage;
         private readonly INotificationSender _notificationSender;
-        private readonly ListingQueryOptions _options;
 
-        public Worker(ILogger<Worker> logger, AvitoParserService avito, IDataStorage storage, INotificationSender notificationSender, IOptions<ListingQueryOptions> options)
+        public Worker(ILogger<Worker> logger, AvitoParserService avito, IDataStorage storage, INotificationSender notificationSender)
         {
             _logger = logger;
             _avito = avito;
             _storage = storage;
             _notificationSender = notificationSender;
-            _options = options.Value;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,7 +30,7 @@ namespace AvitoChecker
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                AvitoListing[] listings = await _avito.GetAvitoListings(_options.Query, _options.PriceMin, _options.PriceMax, AvitoListingType.Private);
+                Listing[] listings = await _avito.GetAvitoListings();
 
                 var newListings = _storage.FindDifferences(listings);
 

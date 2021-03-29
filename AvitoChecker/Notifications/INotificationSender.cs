@@ -1,7 +1,9 @@
-﻿namespace AvitoChecker.Notifications
+﻿using AvitoChecker.ListingUtilities;
+
+namespace AvitoChecker.Notifications
 {
     public interface INotificationSender
     {
-        void SendNotification(AvitoListing listing);
+        void SendNotification(Listing listing);
     }
 }

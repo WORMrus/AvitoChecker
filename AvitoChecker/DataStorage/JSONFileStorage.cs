@@ -1,4 +1,7 @@
-﻿using System;
+﻿using AvitoChecker.Configuration;
+using AvitoChecker.ListingUtilities;
+using Microsoft.Extensions.Options;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,8 +17,8 @@ namespace AvitoChecker.DataStorage
         private readonly StreamWriter _writer;
         private readonly FileStream _fs;
 
-        private List<AvitoListing> _listings;
-        private List<AvitoListing> Listings
+        private List<Listing> _listings;
+        private List<Listing> Listings
         {
             get => _listings;
             set
@@ -27,9 +30,9 @@ namespace AvitoChecker.DataStorage
 
         public string StorageFileLocation { get; init; }
 
-        public JSONFileStorage(string pathToStorage)
+        public JSONFileStorage(IOptions<JSONFileStorageOptions> options)
         {
-            StorageFileLocation = pathToStorage;
+            StorageFileLocation = options.Value.Path;
             string jsonString;
 
             _fs = new FileStream(StorageFileLocation, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
@@ -40,35 +43,22 @@ namespace AvitoChecker.DataStorage
             jsonString = reader.ReadToEnd();
 
             jsonString = string.IsNullOrEmpty(jsonString) ? "[]" : jsonString;
-            Listings = JsonSerializer.Deserialize<List<AvitoListing>>(jsonString);
-
+            Listings = JsonSerializer.Deserialize<List<Listing>>(jsonString);
         }
 
-        public AvitoListing[] GetListings()
-        {
-            return Listings.ToArray();
-        }
+        public Listing[] GetListings() => Listings.ToArray();
 
-        public AvitoListing GetListingByID(string id)
-        {
-            return Listings.Where(x => x.ID == id).First();
-        }
+        public Listing GetListingByID(string id) => Listings.Where(x => x.ID == id).First();
 
-        public void StoreListings(AvitoListing[] listings)
-        {
-            Listings = listings.ToList();
-        }
+        public void StoreListings(Listing[] listings) => Listings = listings.ToList();
 
-        public void StoreListing(AvitoListing listing)
+        public void StoreListing(Listing listing)
         {
             Listings.Add(listing);
             OverrideFile(Listings);
         }
 
-        public AvitoListing[] FindDifferences(AvitoListing[] listing)
-        {
-            return listing.ToArray().Except(Listings).ToArray(); //kinda ugly but I duno
-        }
+        public Listing[] FindDifferences(Listing[] listing) => listing.ToArray().Except(Listings).ToArray(); //kinda ugly but I duno
 
         public bool RemoveListingByID(string id)
         {
@@ -81,7 +71,7 @@ namespace AvitoChecker.DataStorage
             };
         }
 
-        private void OverrideFileIfNeeded(List<AvitoListing> listings)
+        private void OverrideFileIfNeeded(List<Listing> listings)
         {
             if (Listings == null || Enumerable.SequenceEqual(Listings, listings))
             {
@@ -90,7 +80,7 @@ namespace AvitoChecker.DataStorage
             OverrideFile(listings);
         }
 
-        private void OverrideFile(List<AvitoListing> listings)
+        private void OverrideFile(List<Listing> listings)
         {
             _writer.BaseStream.SetLength(0);//effectively overrides the file
             _writer.WriteAsync(JsonSerializer.Serialize(listings, new JsonSerializerOptions

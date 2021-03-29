@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace AvitoChecker
+namespace AvitoChecker.ListingUtilities
 {
-    public class AvitoListing : IEquatable<AvitoListing>
+    public class Listing : IEquatable<Listing>
     {
         public string Name { get; init; }
         public int Price { get; init; }
@@ -17,11 +17,11 @@ namespace AvitoChecker
             {
                 return false;
             }
-            return Equals((AvitoListing)obj);
+            return Equals((Listing)obj);
 
         }
 
-        public bool Equals(AvitoListing other)
+        public bool Equals(Listing other)
         {
             //don't care about Published here if this is the same ID and the rest
             return Name == other.Name && Price == other.Price && ID == other.ID;

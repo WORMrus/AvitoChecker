@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.Notifications;
+﻿using AvitoChecker.ListingUtilities;
+using Microsoft.Toolkit.Uwp.Notifications;
 using System.Diagnostics;
 
 namespace AvitoChecker.Notifications
@@ -16,7 +17,7 @@ namespace AvitoChecker.Notifications
                 Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
             };
         }
-        public void SendNotification(AvitoListing listing)
+        public void SendNotification(Listing listing)
         {
             new ToastContentBuilder().AddText("New listing found")
                                      .AddText(listing.Name)

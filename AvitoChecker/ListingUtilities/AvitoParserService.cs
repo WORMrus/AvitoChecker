@@ -1,5 +1,7 @@
-﻿using HtmlAgilityPack;
+﻿using AvitoChecker.Configuration;
+using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +9,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace AvitoChecker
+namespace AvitoChecker.ListingUtilities
 {
     public class AvitoParserService
     {
@@ -15,23 +17,40 @@ namespace AvitoChecker
         protected readonly string _avitoUrlTemplate;
         protected static readonly string _avitoBaseUrl = "https://www.avito.ru";
 
+        public string Query { get; set; }
+        public int PriceMin { get; set; }
+        public int PriceMax { get; set; }
+        public string Category { get; set; }
+        public string SearchArea { get; set; }
 
-        public AvitoParserService(HttpClient client)
+        public AvitoListingType ListingType { get; set; }
+
+
+        public AvitoParserService(HttpClient client, IOptions<AvitoListingQueryOptions> options)
         {
             _client = client;
             _client.DefaultRequestHeaders.Add("accept", "text/html");
             _client.DefaultRequestHeaders.Add("accept-encoding", "utf-8");
 
-            _avitoUrlTemplate = _avitoBaseUrl + "/rossiya/telefony?cd=2&pmax={0}&pmin={1}&q={2}&s=104&user={3}";
+            AvitoListingQueryOptions opts = options.Value;
+            Query = opts.Query;
+            PriceMin = opts.PriceMin;
+            PriceMax = opts.PriceMax;
+
+            ListingType = opts.AvitoOptions.ListingType;
+            Category = opts.AvitoOptions.Category;
+            SearchArea = opts.AvitoOptions.SearchArea;
+
+            _avitoUrlTemplate = _avitoBaseUrl + "/{0}/{1}?cd=2&pmax={2}&pmin={3}&q={4}&s=104&user={5}";
         }
 
-        public async Task<AvitoListing[]> GetAvitoListings(string searchQuery, int priceFrom, int priceTo, AvitoListingType type)
+        public async Task<Listing[]> GetAvitoListings()
         {
-            string formattedQuery = HttpUtility.UrlEncode(searchQuery);
+            string formattedQuery = HttpUtility.UrlEncode(Query);
             HttpResponseMessage resp;
             try
             {
-                resp = await _client.GetAsync(string.Format(_avitoUrlTemplate, priceTo, priceFrom, formattedQuery, (int)type));
+                resp = await _client.GetAsync(string.Format(_avitoUrlTemplate, SearchArea, Category, PriceMax, PriceMin, formattedQuery, (int)ListingType));
             }
             catch (Exception)
             {
@@ -53,9 +72,9 @@ namespace AvitoChecker
             return HtmlNodesToListings(itemListings);
         }
 
-        protected static AvitoListing[] HtmlNodesToListings(IList<HtmlNode> nodes)
+        protected static Listing[] HtmlNodesToListings(IList<HtmlNode> nodes)
         {
-            AvitoListing[] listings = new AvitoListing[nodes.Count];
+            Listing[] listings = new Listing[nodes.Count];
             for (int i = 0; i < listings.Length; i++)
             {
                 listings[i] = HtmlNodeToListing(nodes[i]);
@@ -63,9 +82,9 @@ namespace AvitoChecker
             return listings;
         }
 
-        protected static AvitoListing HtmlNodeToListing(HtmlNode node)
+        protected static Listing HtmlNodeToListing(HtmlNode node)
         {
-            return new AvitoListing()
+            return new Listing()
             {
                 Name = GetTitleFromNode(node),
                 ID = node.Attributes.AttributesWithName("data-item-id").First().Value,
