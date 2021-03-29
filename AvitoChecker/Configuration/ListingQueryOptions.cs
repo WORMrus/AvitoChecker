@@ -5,5 +5,6 @@
         public string Query { get; set; }
         public int PriceMin { get; set; }
         public int PriceMax { get; set; }
+        public bool StrictQueryMatching { get; set; }
     }
 }

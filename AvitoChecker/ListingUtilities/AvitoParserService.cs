@@ -1,4 +1,5 @@
 ﻿using AvitoChecker.Configuration;
+using AvitoChecker.Extensions;
 using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
 using Microsoft.Extensions.Options;
@@ -22,6 +23,7 @@ namespace AvitoChecker.ListingUtilities
         public int PriceMax { get; set; }
         public string Category { get; set; }
         public string SearchArea { get; set; }
+        public bool StrictQueryMatching { get; set; }
 
         public AvitoListingType ListingType { get; set; }
 
@@ -36,6 +38,7 @@ namespace AvitoChecker.ListingUtilities
             Query = opts.Query;
             PriceMin = opts.PriceMin;
             PriceMax = opts.PriceMax;
+            StrictQueryMatching = opts.StrictQueryMatching;
 
             ListingType = opts.AvitoOptions.ListingType;
             Category = opts.AvitoOptions.Category;
@@ -72,21 +75,27 @@ namespace AvitoChecker.ListingUtilities
             return HtmlNodesToListings(itemListings);
         }
 
-        protected static Listing[] HtmlNodesToListings(IList<HtmlNode> nodes)
+        protected Listing[] HtmlNodesToListings(IList<HtmlNode> nodes)
         {
-            Listing[] listings = new Listing[nodes.Count];
-            for (int i = 0; i < listings.Length; i++)
+            //we will never need more than nodes.Count, so better allocate now then do it now and later again
+            List<Listing> listings = new(nodes.Count);
+            for (int i = 0; i < nodes.Count; i++)
             {
-                listings[i] = HtmlNodeToListing(nodes[i]);
+                listings.AddIfNotNull(HtmlNodeToListing(nodes[i]));
             }
-            return listings;
+            return listings.ToArray();
         }
 
-        protected static Listing HtmlNodeToListing(HtmlNode node)
+        protected Listing HtmlNodeToListing(HtmlNode node)
         {
+            string name = GetTitleFromNode(node);
+            if (StrictQueryMatching && !name.ToLower().Contains(Query.ToLower()))
+            {
+                return null;
+            }
             return new Listing()
             {
-                Name = GetTitleFromNode(node),
+                Name = name,
                 ID = node.Attributes.AttributesWithName("data-item-id").First().Value,
                 Price = int.Parse(GetPriceFromNode(node)),
                 Published = GetPublishedStringFromNode(node),
@@ -130,5 +139,7 @@ namespace AvitoChecker.ListingUtilities
             var foundNodes = node.QuerySelectorAll(query);
             return foundNodes.Count != 1 ? throw new Exception($"Not exactly one node matched the selector. The count is {foundNodes.Count}") : foundNodes[0];
         }
+
     }
+
 }
