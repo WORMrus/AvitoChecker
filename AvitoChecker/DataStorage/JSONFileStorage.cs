@@ -50,7 +50,7 @@ namespace AvitoChecker.DataStorage
 
         public Listing GetListingByID(string id) => Listings.Where(x => x.ID == id).First();
 
-        public void StoreListings(Listing[] listings) => Listings = listings.ToList();
+        public void StoreListings(IEnumerable<Listing> listings) => Listings = listings.ToList();
 
         public void StoreListing(Listing listing)
         {
@@ -58,7 +58,7 @@ namespace AvitoChecker.DataStorage
             OverrideFile(Listings);
         }
 
-        public Listing[] FindDifferences(Listing[] listing) => listing.ToArray().Except(Listings).ToArray(); //kinda ugly but I duno
+        public Listing[] FindDifferences(IEnumerable<Listing> listings) => listings.Except(Listings).ToArray(); //kinda ugly but I duno
 
         public bool RemoveListingByID(string id)
         {

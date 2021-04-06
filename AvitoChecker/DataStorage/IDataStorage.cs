@@ -1,4 +1,5 @@
 ﻿using AvitoChecker.ListingUtilities;
+using System.Collections.Generic;
 
 namespace AvitoChecker.DataStorage
 {
@@ -6,9 +7,9 @@ namespace AvitoChecker.DataStorage
     {
         Listing[] GetListings();
         Listing GetListingByID(string id);
-        void StoreListings(Listing[] listings);
+        void StoreListings(IEnumerable<Listing> listings);
         void StoreListing(Listing listing);
         bool RemoveListingByID(string id);
-        Listing[] FindDifferences(Listing[] listing);
+        Listing[] FindDifferences(IEnumerable<Listing> listing);
     }
 }
