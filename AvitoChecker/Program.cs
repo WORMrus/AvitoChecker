@@ -21,24 +21,26 @@ namespace AvitoChecker
             Host.CreateDefaultBuilder(args)
             .ConfigureServices((hostContext, services) =>
                 {
+                    CookieContainer cookies = new();
                     services.AddHostedService<Worker>()
-                            .Configure<ListingQueryOptions>(hostContext.Configuration.GetSection(nameof(ListingQueryOptions)))
-                            .Configure<AvitoListingQueryOptions>(hostContext.Configuration.GetSection("ListingQueryOptions"))
+                            .Configure<YoulaListingQueryOptions>(hostContext.Configuration.GetSection(nameof(ListingQueryOptions)))
+                            .Configure<AvitoListingQueryOptions>(hostContext.Configuration.GetSection(nameof(ListingQueryOptions)))
                             .Configure<JSONFileStorageOptions>(hostContext.Configuration.GetSection(nameof(JSONFileStorageOptions)))
                             .AddSingleton<IDataStorage, JSONFileStorage>()
                             .AddSingleton<INotificationSender, WindowsNotificationSender>()
                             .AddHttpClient<AvitoParserService>()
+                            .AddTypedClient<YoulaParserService>()
                             .ConfigurePrimaryHttpMessageHandler(() =>
                             {
                                 var proxy = new WebProxy
                                 {
-                                    Address = new Uri("http://host.docker.internal:8888"),
+                                    Address = new Uri("http://localhost:8888"),
                                     BypassProxyOnLocal = false,
                                 };
                                 return new HttpClientHandler()
                                 {
                                     //Proxy = proxy,
-                                    //ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                                 };
                             });
                 });

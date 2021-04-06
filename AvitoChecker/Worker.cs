@@ -14,12 +14,14 @@ namespace AvitoChecker
     {
         private readonly ILogger<Worker> _logger;
         private readonly AvitoParserService _avito;
+        private readonly YoulaParserService _youla;
         private readonly IDataStorage _storage;
         private readonly INotificationSender _notificationSender;
 
-        public Worker(ILogger<Worker> logger, AvitoParserService avito, IDataStorage storage, INotificationSender notificationSender)
+        public Worker(ILogger<Worker> logger, AvitoParserService avito, YoulaParserService youla, IDataStorage storage, INotificationSender notificationSender)
         {
             _logger = logger;
+            _youla = youla;
             _avito = avito;
             _storage = storage;
             _notificationSender = notificationSender;
@@ -30,7 +32,10 @@ namespace AvitoChecker
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                _logger.LogWarning("StartAvito");
                 Listing[] listings = await _avito.GetAvitoListings();
+                _logger.LogWarning("StartYoula");
+                Listing[] youlaListings = await _youla.GetAvitoListings();
 
                 var newListings = _storage.FindDifferences(listings);
 
