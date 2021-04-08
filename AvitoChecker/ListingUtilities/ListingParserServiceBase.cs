@@ -1,10 +1,10 @@
 ﻿using AngleSharp;
 using AngleSharp.Dom;
 using AvitoChecker.Configuration;
-using AvitoChecker.Extensions;
 using AvitoChecker.Retriers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,8 +48,8 @@ namespace AvitoChecker.ListingUtilities
 
         protected IEnumerable<Listing> HtmlNodesToListings(IEnumerable<IElement> nodes)
         {
-            List<Listing> listings = new();
-            nodes.ForEach(node => listings.AddIfNotNull(HtmlNodeToListing(node)));
+            var listings = nodes.Select(node => HtmlNodeToListing(node))
+                                .Where(lst => lst != null);
             return listings;
         }
 
@@ -58,17 +58,17 @@ namespace AvitoChecker.ListingUtilities
             //It kinda seems clunky. I could've used a closure, but then I would still have to set that variable to null
             async Task<HttpResponseMessage> func()
             {
-                HttpResponseMessage resp = await _client.GetAsync(listingGetUrl);
+                HttpResponseMessage resp = await _client.GetAsync(listingGetUrl, cancellationToken);
                 resp.EnsureSuccessStatusCode();
                 return resp;
             }
 
             HttpResponseMessage resp = await _retrier.AttemptAsync(func, cancellationToken);
 
-            string res = await resp.Content.ReadAsStringAsync();
+            string res = await resp.Content.ReadAsStringAsync(cancellationToken);
 
             var context = BrowsingContext.New();
-            var doc = await context.OpenAsync(req => req.Content(res));
+            var doc = await context.OpenAsync(req => req.Content(res), cancellationToken);
 
             return doc;
         }
