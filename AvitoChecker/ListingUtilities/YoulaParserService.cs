@@ -110,7 +110,7 @@ namespace AvitoChecker.ListingUtilities
                     PropertyNameCaseInsensitive = true
                 });
 
-            return strictCityNameMatching ? cities.First(c => c.Name == cityName) : cities[0];
+            return strictCityNameMatching ? cities.First(c => c.Name.Equals(cityName, StringComparison.OrdinalIgnoreCase)) : cities[0];
         }
 
         public override async Task<IEnumerable<Listing>> GetListings(CancellationToken cancellationToken)
