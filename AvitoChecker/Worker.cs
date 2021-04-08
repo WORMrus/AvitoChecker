@@ -71,7 +71,7 @@ namespace AvitoChecker
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
-            List<Task<Listing[]>> tasks = new();
+            List<Task<IEnumerable<Listing>>> tasks = new();
             foreach (var getter in _listingGeters)
             {
                 tasks.Add(getter.GetListings(stoppingToken));

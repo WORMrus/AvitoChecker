@@ -1,7 +1,8 @@
-﻿using AvitoChecker.Configuration;
+﻿using AngleSharp;
+using AngleSharp.Dom;
+using AvitoChecker.Configuration;
 using AvitoChecker.Extensions;
 using AvitoChecker.Retriers;
-using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -23,7 +24,7 @@ namespace AvitoChecker.ListingUtilities
         public bool StrictQueryMatching { get; set; }
         public abstract string ListingSource { get; init; }
 
-        protected abstract Listing HtmlNodeToListing(HtmlNode node);
+        protected abstract Listing HtmlNodeToListing(IElement node);
 
         protected ListingParserServiceBase(HttpClient client, ListingQueryOptions queryOptions, string baseUrl,
                                            IRetrier retrier)
@@ -43,20 +44,16 @@ namespace AvitoChecker.ListingUtilities
             _retrier = retrier;
         }
 
-        public abstract Task<Listing[]> GetListings(CancellationToken cancellationToken);
+        public abstract Task<IEnumerable<Listing>> GetListings(CancellationToken cancellationToken);
 
-        protected Listing[] HtmlNodesToListings(IList<HtmlNode> nodes)
+        protected IEnumerable<Listing> HtmlNodesToListings(IEnumerable<IElement> nodes)
         {
-            //we will never need more than nodes.Count, so better allocate now then do it now and later again
-            List<Listing> listings = new(nodes.Count);
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                listings.AddIfNotNull(HtmlNodeToListing(nodes[i]));
-            }
-            return listings.ToArray();
+            List<Listing> listings = new();
+            nodes.ForEach(node => listings.AddIfNotNull(HtmlNodeToListing(node)));
+            return listings;
         }
 
-        protected async Task<HtmlDocument> GetListingsDocument(string listingGetUrl, CancellationToken cancellationToken)
+        protected async Task<IDocument> GetListingsDocument(string listingGetUrl, CancellationToken cancellationToken)
         {
             //It kinda seems clunky. I could've used a closure, but then I would still have to set that variable to null
             async Task<HttpResponseMessage> func()
@@ -68,12 +65,10 @@ namespace AvitoChecker.ListingUtilities
 
             HttpResponseMessage resp = await _retrier.AttemptAsync(func, cancellationToken);
 
-            HtmlDocument doc = new();
-            doc.OptionFixNestedTags = true;
-
             string res = await resp.Content.ReadAsStringAsync();
 
-            doc.LoadHtml(res);
+            var context = BrowsingContext.New();
+            var doc = await context.OpenAsync(req => req.Content(res));
 
             return doc;
         }

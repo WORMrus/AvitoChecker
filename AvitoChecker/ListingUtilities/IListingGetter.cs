@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AvitoChecker.ListingUtilities
@@ -6,6 +7,6 @@ namespace AvitoChecker.ListingUtilities
     public interface IListingGetter
     {
         public string ListingSource { get; }
-        public Task<Listing[]> GetListings(CancellationToken cancellationToken);
+        public Task<IEnumerable<Listing>> GetListings(CancellationToken cancellationToken);
     }
 }

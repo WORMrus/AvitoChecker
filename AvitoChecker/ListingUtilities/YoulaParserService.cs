@@ -1,9 +1,9 @@
-﻿using AvitoChecker.Configuration;
+﻿using AngleSharp.Dom;
+using AvitoChecker.Configuration;
 using AvitoChecker.Retriers;
-using HtmlAgilityPack;
-using HtmlAgilityPack.CssSelectors.NetCore;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Net.Http;
@@ -113,7 +113,7 @@ namespace AvitoChecker.ListingUtilities
             return strictCityNameMatching ? cities.First(c => c.Name == cityName) : cities[0];
         }
 
-        public override async Task<Listing[]> GetListings(CancellationToken cancellationToken)
+        public override async Task<IEnumerable<Listing>> GetListings(CancellationToken cancellationToken)
         {
             if (!_isInstanceInitialized)
             {
@@ -122,20 +122,19 @@ namespace AvitoChecker.ListingUtilities
             return await GetListingsInternal(cancellationToken);
         }
 
-        protected async Task<Listing[]> GetListingsInternal(CancellationToken cancellationToken)
+        protected async Task<IEnumerable<Listing>> GetListingsInternal(CancellationToken cancellationToken)
         {
             string formattedQuery = HttpUtility.UrlEncode(Query);
             var urlToGet = string.Format(_urlTemplate, PriceMin, PriceMax, formattedQuery);
 
             var doc = await GetListingsDocument(urlToGet, cancellationToken);
 
-            var contentNode = doc.QuerySelectorAll("ul.product_list")[0];
-            var itemListings = contentNode.QuerySelectorAll("li:not([data-banner-type])");
+            var itemListings = doc.QuerySelectorAll("ul.product_list>li:not([data-banner-type])");
 
             return HtmlNodesToListings(itemListings);
         }
 
-        protected override Listing HtmlNodeToListing(HtmlNode node)
+        protected override Listing HtmlNodeToListing(IElement node)
         {
             string name = GetTitleFromNode(node);
             if (StrictQueryMatching && !name.ToLower().Contains(Query.ToLower()))
@@ -145,7 +144,7 @@ namespace AvitoChecker.ListingUtilities
             return new Listing()
             {
                 Name = name,
-                ID = node.GetAttributeValue("data-id", ""),
+                ID = node.GetAttribute("data-id"),
                 Price = int.Parse(GetPriceFromNode(node)),
                 Published = GetPublishedStringFromNode(node),
                 Link = _baseUrl + GetLinkFromNode(node),
@@ -153,31 +152,31 @@ namespace AvitoChecker.ListingUtilities
             };
         }
 
-        protected static string GetTitleFromNode(HtmlNode node)
+        protected static string GetTitleFromNode(IElement node)
         {
             var singleNode = QueryNodeAndEnsureSingleResult(node, ".product_item__title");
-            return singleNode.InnerText;
+            return singleNode.TextContent;
         }
 
-        protected static string GetLinkFromNode(HtmlNode node)
+        protected static string GetLinkFromNode(IElement node)
         {
             var linkNode = QueryNodeAndEnsureSingleResult(node, "a");
-            return linkNode.GetAttributeValue("href", "");
+            return linkNode.GetAttribute("href");
         }
 
-        protected static string GetPriceFromNode(HtmlNode node)
+        protected static string GetPriceFromNode(IElement node)
         {
-            var json = HttpUtility.HtmlDecode(node.GetAttributeValue("data-discount", ""));
+            var json = HttpUtility.HtmlDecode(node.GetAttribute("data-discount"));
             dynamic dyn = JsonSerializer.Deserialize<ExpandoObject>(json); //lazy but easier than looking for the needed key manually
             return dyn.price_after_discount.ToString();
         }
 
-        protected static string GetPublishedStringFromNode(HtmlNode node)
+        protected static string GetPublishedStringFromNode(IElement node)
         {
             //TODO: check if some listings do not have a date. E.g. shop-related ones
             try
             {
-                return QueryNodeAndEnsureSingleResult(node, ".product_item__date .visible-xs").FirstChild.InnerText;
+                return QueryNodeAndEnsureSingleResult(node, ".product_item__date .visible-xs").FirstChild.TextContent;
             }
             catch (Exception)
             {
@@ -185,10 +184,10 @@ namespace AvitoChecker.ListingUtilities
             }
         }
 
-        protected static HtmlNode QueryNodeAndEnsureSingleResult(HtmlNode node, string query)
+        protected static IElement QueryNodeAndEnsureSingleResult(IElement node, string query)
         {
             var foundNodes = node.QuerySelectorAll(query);
-            return foundNodes.Count != 1 ? throw new Exception($"Not exactly one node matched the selector. The count is {foundNodes.Count}") : foundNodes[0];
+            return foundNodes.Length != 1 ? throw new Exception($"Not exactly one node matched the selector. The count is {foundNodes.Length}") : foundNodes[0];
         }
 
         public class YoulaLocationData
