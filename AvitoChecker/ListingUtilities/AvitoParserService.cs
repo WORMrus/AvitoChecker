@@ -39,7 +39,6 @@ namespace AvitoChecker.ListingUtilities
 
         public override async Task<Listing[]> GetListings(CancellationToken cancellationToken)
         {
-            throw new Exception();
             string formattedQuery = HttpUtility.UrlEncode(Query);
             var urlToGet = string.Format(_avitoUrlTemplate, SearchArea, Category, PriceMax, PriceMin, formattedQuery, (int)ListingType);
 
