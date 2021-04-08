@@ -69,7 +69,7 @@ namespace AvitoChecker.ListingUtilities
             switch (cityData.LocationType)
             {
                 case YoulaLocationType.City:
-                    form.Add(new StringContent(cityData.Id), "id");
+                    form.Add(new StringContent(cityData.Id), "cityId");
                     break;
 
                 case YoulaLocationType.Point:
