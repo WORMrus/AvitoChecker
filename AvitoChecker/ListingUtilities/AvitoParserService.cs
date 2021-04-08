@@ -1,92 +1,57 @@
 ﻿using AvitoChecker.Configuration;
-using AvitoChecker.Extensions;
+using AvitoChecker.Retriers;
 using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
 using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace AvitoChecker.ListingUtilities
 {
-    public class AvitoParserService
+    public class AvitoParserService : ListingParserServiceBase
     {
-        protected readonly HttpClient _client;
         protected readonly string _avitoUrlTemplate;
-        protected static readonly string _avitoBaseUrl = "https://www.avito.ru";
 
-        public string Query { get; set; }
-        public int PriceMin { get; set; }
-        public int PriceMax { get; set; }
+
         public string Category { get; set; }
         public string SearchArea { get; set; }
-        public bool StrictQueryMatching { get; set; }
-
+        public override string ListingSource { get; init; }
         public AvitoListingType ListingType { get; set; }
 
 
-        public AvitoParserService(HttpClient client, IOptions<AvitoListingQueryOptions> options)
+        public AvitoParserService(HttpClient client, IOptions<AvitoListingQueryOptions> options, IRetrier retrier)
+            : base(client, options.Value, "https://www.avito.ru", retrier)
         {
-            _client = client;
-            _client.DefaultRequestHeaders.Add("accept", "text/html");
-            _client.DefaultRequestHeaders.Add("accept-encoding", "utf-8");
+            var opts = options.Value.AvitoOptions;
 
-            AvitoListingQueryOptions opts = options.Value;
-            Query = opts.Query;
-            PriceMin = opts.PriceMin;
-            PriceMax = opts.PriceMax;
-            StrictQueryMatching = opts.StrictQueryMatching;
+            ListingType = opts.ListingType;
+            Category = opts.Category;
+            SearchArea = opts.SearchArea;
 
-            ListingType = opts.AvitoOptions.ListingType;
-            Category = opts.AvitoOptions.Category;
-            SearchArea = opts.AvitoOptions.SearchArea;
+            _avitoUrlTemplate = _baseUrl + "/{0}/{1}?cd=2&pmax={2}&pmin={3}&q={4}&s=104&user={5}";
 
-            _avitoUrlTemplate = _avitoBaseUrl + "/{0}/{1}?cd=2&pmax={2}&pmin={3}&q={4}&s=104&user={5}";
+            ListingSource = "Avito";
         }
 
-        public async Task<Listing[]> GetAvitoListings()
+        public override async Task<Listing[]> GetListings(CancellationToken cancellationToken)
         {
+            throw new Exception();
             string formattedQuery = HttpUtility.UrlEncode(Query);
-            HttpResponseMessage resp;
-            try
-            {
-                resp = await _client.GetAsync(string.Format(_avitoUrlTemplate, SearchArea, Category, PriceMax, PriceMin, formattedQuery, (int)ListingType));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            var urlToGet = string.Format(_avitoUrlTemplate, SearchArea, Category, PriceMax, PriceMin, formattedQuery, (int)ListingType);
 
-            resp.EnsureSuccessStatusCode();
+            var doc = await GetListingsDocument(urlToGet, cancellationToken);
 
-            HtmlDocument doc = new();
-            doc.OptionFixNestedTags = true;
-
-            string res = await resp.Content.ReadAsStringAsync();
-
-
-            doc.LoadHtml(res);
             var contentNode = doc.QuerySelectorAll("div[class^='index-content']:not([calss$='category-map'])")[0];
             var itemListings = contentNode.QuerySelectorAll("[class$='js-catalog-item-enum']");
 
             return HtmlNodesToListings(itemListings);
         }
 
-        protected Listing[] HtmlNodesToListings(IList<HtmlNode> nodes)
-        {
-            //we will never need more than nodes.Count, so better allocate now then do it now and later again
-            List<Listing> listings = new(nodes.Count);
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                listings.AddIfNotNull(HtmlNodeToListing(nodes[i]));
-            }
-            return listings.ToArray();
-        }
-
-        protected Listing HtmlNodeToListing(HtmlNode node)
+        protected override Listing HtmlNodeToListing(HtmlNode node)
         {
             string name = GetTitleFromNode(node);
             if (StrictQueryMatching && !name.ToLower().Contains(Query.ToLower()))
@@ -99,7 +64,8 @@ namespace AvitoChecker.ListingUtilities
                 ID = node.Attributes.AttributesWithName("data-item-id").First().Value,
                 Price = int.Parse(GetPriceFromNode(node)),
                 Published = GetPublishedStringFromNode(node),
-                Link = _avitoBaseUrl + GetLinkFromNode(node)
+                Link = _baseUrl + GetLinkFromNode(node),
+                Source = ListingSource
             };
         }
 

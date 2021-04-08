@@ -9,6 +9,7 @@ namespace AvitoChecker.ListingUtilities
         public string ID { get; init; }
         public string Published { get; init; }
         public string Link { get; set; }
+        public string Source { get; set; }
 
         public override bool Equals(Object obj)
         {
@@ -24,12 +25,12 @@ namespace AvitoChecker.ListingUtilities
         public bool Equals(Listing other)
         {
             //don't care about Published here if this is the same ID and the rest
-            return Name == other.Name && Price == other.Price && ID == other.ID;
+            return Name == other.Name && Price == other.Price && ID == other.ID && Source == other.Source;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Name, Price, ID);
+            return HashCode.Combine(Name, Price, ID, Source);
         }
     }
 

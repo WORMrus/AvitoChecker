@@ -1,14 +1,14 @@
 ﻿using AvitoChecker.Configuration;
-using AvitoChecker.Extensions;
+using AvitoChecker.Retriers;
 using HtmlAgilityPack;
 using HtmlAgilityPack.CssSelectors.NetCore;
 using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using static AvitoChecker.Configuration.YoulaListingQueryOptions;
@@ -22,18 +22,21 @@ namespace AvitoChecker.ListingUtilities
         protected bool _isInstanceInitialized;
 
         public string Category { get; set; }
+        public override string ListingSource { get; init; }
 
-        public YoulaParserService(HttpClient client, IOptions<YoulaListingQueryOptions> options)
-            : base(client, options.Value, "https://youla.ru")
+        public YoulaParserService(HttpClient client, IOptions<YoulaListingQueryOptions> options, IRetrier retrier)
+            : base(client, options.Value, "https://youla.ru", retrier)
         {
             _youlaOptions = options.Value.YoulaOptions;
             //Prices are implicitly in 1/100 of a rubble 
             _urlTemplate = _baseUrl + "/all/smartfony-planshety/smartfony?attributes[price][from]={0}00&attributes[price][to]={1}00&attributes[sort_field]=date_published&q={2}";
 
             _isInstanceInitialized = false;
+
+            ListingSource = "Youla";
         }
 
-        public async Task InitialyzeInstanceAsync()
+        public async Task InitializeInstanceAsync()
         {
             var opts = _youlaOptions;
 
@@ -110,55 +113,29 @@ namespace AvitoChecker.ListingUtilities
             return strictCityNameMatching ? cities.First(c => c.Name == cityName) : cities[0];
         }
 
-        public async Task<Listing[]> GetAvitoListings()
+        public override async Task<Listing[]> GetListings(CancellationToken cancellationToken)
         {
             if (!_isInstanceInitialized)
             {
-                await InitialyzeInstanceAsync();
+                await InitializeInstanceAsync();
             }
-            return await GetAvitoListingsInternal();
+            return await GetListingsInternal(cancellationToken);
         }
 
-        protected async Task<Listing[]> GetAvitoListingsInternal()
+        protected async Task<Listing[]> GetListingsInternal(CancellationToken cancellationToken)
         {
             string formattedQuery = HttpUtility.UrlEncode(Query);
-            HttpResponseMessage resp;
-            try
-            {
-                resp = await _client.GetAsync(string.Format(_urlTemplate, PriceMin, PriceMax, formattedQuery));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            var urlToGet = string.Format(_urlTemplate, PriceMin, PriceMax, formattedQuery);
 
-            resp.EnsureSuccessStatusCode();
+            var doc = await GetListingsDocument(urlToGet, cancellationToken);
 
-            HtmlDocument doc = new();
-            doc.OptionFixNestedTags = true;
-
-            string res = await resp.Content.ReadAsStringAsync();
-
-
-            doc.LoadHtml(res);
             var contentNode = doc.QuerySelectorAll("ul.product_list")[0];
             var itemListings = contentNode.QuerySelectorAll("li:not([data-banner-type])");
 
             return HtmlNodesToListings(itemListings);
         }
 
-        protected Listing[] HtmlNodesToListings(IList<HtmlNode> nodes)
-        {
-            //we will never need more than nodes.Count, so better allocate now then do it now and later again
-            List<Listing> listings = new(nodes.Count);
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                listings.AddIfNotNull(HtmlNodeToListing(nodes[i]));
-            }
-            return listings.ToArray();
-        }
-
-        protected Listing HtmlNodeToListing(HtmlNode node)
+        protected override Listing HtmlNodeToListing(HtmlNode node)
         {
             string name = GetTitleFromNode(node);
             if (StrictQueryMatching && !name.ToLower().Contains(Query.ToLower()))
@@ -171,7 +148,8 @@ namespace AvitoChecker.ListingUtilities
                 ID = node.GetAttributeValue("data-id", ""),
                 Price = int.Parse(GetPriceFromNode(node)),
                 Published = GetPublishedStringFromNode(node),
-                Link = _baseUrl + GetLinkFromNode(node)
+                Link = _baseUrl + GetLinkFromNode(node),
+                Source = ListingSource
             };
         }
 

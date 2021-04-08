@@ -2,6 +2,7 @@ using AvitoChecker.Configuration;
 using AvitoChecker.DataStorage;
 using AvitoChecker.ListingUtilities;
 using AvitoChecker.Notifications;
+using AvitoChecker.Retriers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -25,11 +26,14 @@ namespace AvitoChecker
                     services.AddHostedService<Worker>()
                             .Configure<YoulaListingQueryOptions>(hostContext.Configuration.GetSection(nameof(ListingQueryOptions)))
                             .Configure<AvitoListingQueryOptions>(hostContext.Configuration.GetSection(nameof(ListingQueryOptions)))
+                            .Configure<RetrierOptions>(hostContext.Configuration.GetSection(nameof(RetrierOptions)))
+                            .Configure<WorkerOptions>(hostContext.Configuration.GetSection(nameof(WorkerOptions)))
                             .Configure<JSONFileStorageOptions>(hostContext.Configuration.GetSection(nameof(JSONFileStorageOptions)))
+                            .AddTransient<IRetrier, Retrier>()
                             .AddSingleton<IDataStorage, JSONFileStorage>()
                             .AddSingleton<INotificationSender, WindowsNotificationSender>()
-                            .AddHttpClient<AvitoParserService>()
-                            .AddTypedClient<YoulaParserService>()
+                            .AddHttpClient<IListingGetter, AvitoParserService>()
+                            .AddTypedClient<IListingGetter, YoulaParserService>()
                             .ConfigurePrimaryHttpMessageHandler(() =>
                             {
                                 var proxy = new WebProxy
