@@ -42,7 +42,7 @@ namespace AvitoChecker.ListingUtilities
 
             YoulaLocationData cityData;
 
-            if (opts.Type == YoulaLocationType.City)
+            if (opts.Type == YoulaLocationType.City || opts.Type == YoulaLocationType.PointFromCityName)
             {
                 cityData = await GetCityDataByName(opts.CityName, opts.StrictCityNameMatching.Value);
             }
@@ -73,6 +73,7 @@ namespace AvitoChecker.ListingUtilities
                     break;
 
                 case YoulaLocationType.Point:
+                case YoulaLocationType.PointFromCityName:
                     form.Add(new StringContent(cityData.Name), "title");
                     form.Add(new StringContent(cityData.Coords.Latitude.ToString()), "lat");
                     form.Add(new StringContent(cityData.Coords.Longitude.ToString()), "lng");
@@ -81,7 +82,8 @@ namespace AvitoChecker.ListingUtilities
                 default:
                     throw new NotImplementedException($"Missing implementation for {cityData.LocationType}");
             }
-            form.Add(new StringContent(cityData.LocationType.ToString()), "type");
+            var type = cityData.LocationType == YoulaLocationType.PointFromCityName ? "point" : cityData.LocationType.ToString();
+            form.Add(new StringContent(type), "type");
             form.Add(new StringContent(cityData.Radius.ToString()), "r");
 
             var resp = await _client.PostAsync(_baseUrl + "/web-api/geo/save_location", form);
@@ -92,7 +94,7 @@ namespace AvitoChecker.ListingUtilities
         //The assumption is that longer city names have fewer listings and that you either have one result
         //Or that the needed city is the 1st one.
         //A possible issue: you need "City", but "Bigger City" exists and it is also bigger. 
-        //strictCityNameMatching hast to be true to get "City" instead of "Bigger City"
+        //strictCityNameMatching has to be true to get "City" instead of "Bigger City"
         protected async Task<YoulaLocationData> GetCityDataByName(string cityName, bool strictCityNameMatching)
         {
             string searchUrl = $"https://api.youla.io/api/v1/geo/cities?search={HttpUtility.UrlEncode(cityName)}";

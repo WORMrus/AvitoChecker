@@ -17,7 +17,8 @@
         public enum YoulaLocationType
         {
             City,
-            Point
+            Point,
+            PointFromCityName
         }
     }
 
