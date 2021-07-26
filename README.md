@@ -15,7 +15,7 @@ Use:
       "Category": "tovary_dlya_kompyutera/komplektuyuschie/materinskie_platy"
     }
 ```
-The random letters can be ommited in the ase of Avito
+The random letters can be ommited in the case of Avito
 
 The tool stores any seen listings in the file specified by the `JSONFileStorageOptions` section.
 
